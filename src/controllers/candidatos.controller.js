@@ -4,44 +4,22 @@ exports.create = async (req, res) => {
   try {
     const { nome, funcao, num_votacao } = req.body;
 
-    if (!nome || !funcao || !num_votacao) {
-      return res.status(400).json({
-        erro: "Campos obrigatórios não informados"
-      });
-    }
-
-    // verifica duplicidade
-    const exists = await db.query(
-      `SELECT 1 FROM candidatos WHERE num_votacao = $1`,
-      [num_votacao]
-    );
-
-    if (exists.rows.length > 0) {
-      return res.status(400).json({
-        erro: "Número de votação já cadastrado"
-      });
-    }
-
-    const foto = req.file ? req.file.filename : null;
+    const fotoUrl = req.file ? req.file.path : null;
 
     await db.query(
-      `INSERT INTO candidatos (nome, funcao, num_votacao, foto)
-       VALUES ($1, $2, $3, $4)`,
-      [nome, funcao, num_votacao, foto]
+      `INSERT INTO candidatos (nome, funcao, foto, num_votacao, ativo)
+       VALUES ($1, $2, $3, $4, true)`,
+      [nome, funcao, fotoUrl, num_votacao]
     );
 
-    res.status(201).json({
-      message: "Candidato cadastrado com sucesso",
-      foto
-    });
+    res.status(201).json({ message: "Candidato cadastrado" });
 
   } catch (error) {
     console.error(error);
-    res.status(500).json({
-      erro: "Erro ao cadastrar candidato"
-    });
+    res.status(500).json({ erro: "Erro ao cadastrar candidato" });
   }
 };
+
 
 exports.list = async (req, res) => {
   try {
