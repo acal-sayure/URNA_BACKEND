@@ -5,41 +5,51 @@ exports.votar = async (req, res) => {
     const { id_candidato } = req.body;
 
     if (!id_candidato) {
-      return res.status(400).json({
-        erro: "Candidato não informado"
+      return res.status(400).json({ erro: "Candidato não informado" });
+    }
+
+    // 🔒 verifica se urna está liberada
+    const statusUrna = await sql.query(`
+      SELECT liberada FROM controle_urna LIMIT 1
+    `);
+
+    if (!statusUrna.rows[0].liberada) {
+      return res.status(403).json({
+        erro: "Urna bloqueada. Aguarde o mesário."
       });
     }
 
-    // verifica se existe
-    const candidato = await db.query(
-      `SELECT id FROM candidatos
-       WHERE id = $1 AND ativo = true`,
-      [id_candidato]
-    );
+    // verifica candidato
+    const candidato = await sql.query(`
+      SELECT id FROM candidatos
+      WHERE id = $1 AND ativo = true
+    `, [id_candidato]);
 
     if (candidato.rows.length === 0) {
-      return res.status(404).json({
-        erro: "Candidato inválido"
-      });
+      return res.status(404).json({ erro: "Candidato inválido" });
     }
 
-    await db.query(
-      `INSERT INTO votos (candidato_id, status)
-       VALUES ($1, 'VALIDO')`,
-      [id_candidato]
-    );
+    // registra voto
+    await sql.query(`
+      INSERT INTO votos (candidato_id, status)
+      VALUES ($1, 'VALIDO')
+    `, [id_candidato]);
+
+    // 🔒 BLOQUEIA URNA
+    await sql.query(`
+      UPDATE controle_urna SET liberada = false
+    `);
 
     res.status(201).json({
-      message: "Voto computado com sucesso 🗳️"
+      message: "Voto computado com sucesso"
     });
 
   } catch (error) {
-    console.error("ERRO AO VOTAR:", error);
-    res.status(500).json({
-      erro: "Erro ao registrar voto"
-    });
+    console.error(error);
+    res.status(500).json({ erro: "Erro ao registrar voto" });
   }
 };
+
 
 exports.apuracao = async (req, res) => {
   try {
@@ -60,4 +70,20 @@ exports.apuracao = async (req, res) => {
     console.error(error);
     res.status(500).json({ erro: error.message });
   }
+};
+
+exports.statusUrna = async (req, res) => {
+  const result = await sql.query(`
+    SELECT liberada FROM controle_urna LIMIT 1
+  `);
+
+  res.json(result.rows[0]);
+};
+
+exports.liberarUrna = async (req, res) => {
+  await sql.query(`
+    UPDATE controle_urna SET liberada = true
+  `);
+
+  res.json({ message: "Urna liberada" });
 };
