@@ -15,7 +15,10 @@ exports.create = async (req, res) => {
     res.status(201).json({ message: "Candidato cadastrado" });
 
   } catch (error) {
-    console.error(error);
+    console.error("ERRO CREATE:", error);
+console.error("ERRO DETALHADO:", error.message);
+console.error("STACK:", error.stack);
+
     res.status(500).json({ erro: "Erro ao cadastrar candidato" });
   }
 };
