@@ -6,7 +6,7 @@ const controller = require('../controllers/votos.controller');
 router.post('/', controller.votar);
 router.get('/apuracao', controller.apuracao);
 router.get('/status', controller.statusUrna);
-router.post('/liberar', auth, controller.liberarUrna);
+router.post('/liberar', controller.liberarUrna);
 
 
 
