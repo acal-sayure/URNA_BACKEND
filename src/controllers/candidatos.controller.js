@@ -4,7 +4,9 @@ exports.create = async (req, res) => {
   try {
     const { nome, funcao, num_votacao } = req.body;
 
-    const fotoUrl = req.file ? req.file.path : null;
+    // const fotoUrl = req.file ? req.file.path : null;
+    const fotoUrl = null;
+
 
     await db.query(
       `INSERT INTO candidatos (nome, funcao, foto, num_votacao, ativo)
