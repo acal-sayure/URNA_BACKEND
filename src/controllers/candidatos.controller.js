@@ -1,30 +1,34 @@
-const sql = require('../config/db');
-
-
+const db = require('../config/db');
 
 exports.create = async (req, res) => {
   try {
-    const { nome, funcao, numero_votacao } = req.body;
-      const exists = await sql.query`
-        SELECT 1 FROM CANDIDATOS WHERE NUM_VOTACAO = ${numero_votacao}
-      `;
+    const { nome, funcao, numero } = req.body;
 
-      if (exists.recordset.length > 0) {
-        return res.status(400).json({
-          erro: "Número de votação já cadastrado"
-        });
-      }
+    if (!nome || !funcao || !numero) {
+      return res.status(400).json({
+        erro: "Campos obrigatórios não informados"
+      });
+    }
 
-    if (!nome || !funcao || !numero_votacao) {
-      return res.status(400).json({ erro: "Campos obrigatórios não informados" });
+    // verifica duplicidade
+    const exists = await db.query(
+      `SELECT 1 FROM candidatos WHERE numero = $1`,
+      [numero]
+    );
+
+    if (exists.rows.length > 0) {
+      return res.status(400).json({
+        erro: "Número de votação já cadastrado"
+      });
     }
 
     const foto = req.file ? req.file.filename : null;
 
-    await sql.query`
-      INSERT INTO CANDIDATOS (NOME, FUNCAO, NUM_VOTACAO, FOTO, ATIVO)
-      VALUES (${nome}, ${funcao}, ${numero_votacao}, ${foto}, 1)
-    `;
+    await db.query(
+      `INSERT INTO candidatos (nome, funcao, numero, foto)
+       VALUES ($1, $2, $3, $4)`,
+      [nome, funcao, numero, foto]
+    );
 
     res.status(201).json({
       message: "Candidato cadastrado com sucesso",
@@ -32,38 +36,41 @@ exports.create = async (req, res) => {
     });
 
   } catch (error) {
-  console.error(error);
-
-  if (error.number === 2627 || error.number === 2601) {
-    return res.status(400).json({
-      erro: "Número de votação já cadastrado"
+    console.error(error);
+    res.status(500).json({
+      erro: "Erro ao cadastrar candidato"
     });
   }
-
-  res.status(500).json({ erro: "Erro ao cadastrar candidato" });
-}
 };
-
-
 
 exports.list = async (req, res) => {
   try {
-    const result = await sql.query`
-      SELECT ID, NOME, FUNCAO, FOTO FROM CANDIDATOS WHERE ATIVO = 1
-    `;
-    res.json(result.recordset);
+    const result = await db.query(
+      `SELECT id, nome, funcao, foto, numero
+       FROM candidatos
+       WHERE ativo = true
+       ORDER BY numero`
+    );
+
+    res.json(result.rows);
   } catch (error) {
     console.error(error);
     res.status(500).json({ erro: error.message });
   }
 };
 
-
 exports.listPublic = async (req, res) => {
-  const result = await sql.query`
-    SELECT ID, NOME, FUNCAO, FOTO
-    FROM CANDIDATOS
-    WHERE ATIVO = 1
-  `;
-  res.json(result.recordset);
+  try {
+    const result = await db.query(
+      `SELECT id, nome, funcao, foto, numero
+       FROM candidatos
+       WHERE ativo = true
+       ORDER BY numero`
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ erro: error.message });
+  }
 };
