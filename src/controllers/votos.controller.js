@@ -9,7 +9,7 @@ exports.votar = async (req, res) => {
     }
 
     // 🔒 verifica se urna está liberada
-    const statusUrna = await sql.query(`
+    const statusUrna = await db.query(`
       SELECT liberada FROM controle_urna LIMIT 1
     `);
 
@@ -20,7 +20,7 @@ exports.votar = async (req, res) => {
     }
 
     // verifica candidato
-    const candidato = await sql.query(`
+    const candidato = await db.query(`
       SELECT id FROM candidatos
       WHERE id = $1 AND ativo = true
     `, [id_candidato]);
@@ -30,13 +30,13 @@ exports.votar = async (req, res) => {
     }
 
     // registra voto
-    await sql.query(`
+    await db.query(`
       INSERT INTO votos (candidato_id, status)
       VALUES ($1, 'VALIDO')
     `, [id_candidato]);
 
     // 🔒 BLOQUEIA URNA
-    await sql.query(`
+    await db.query(`
       UPDATE controle_urna SET liberada = false
     `);
 
@@ -50,11 +50,10 @@ exports.votar = async (req, res) => {
   }
 };
 
-
 exports.apuracao = async (req, res) => {
   try {
-    const result = await db.query(
-      `SELECT 
+    const result = await db.query(`
+      SELECT 
           c.id,
           c.nome,
           COUNT(v.id) AS total_votos
@@ -62,8 +61,8 @@ exports.apuracao = async (req, res) => {
        LEFT JOIN votos v ON v.candidato_id = c.id
        WHERE c.ativo = true
        GROUP BY c.id
-       ORDER BY total_votos DESC`
-    );
+       ORDER BY total_votos DESC
+    `);
 
     res.json(result.rows);
   } catch (error) {
@@ -73,17 +72,27 @@ exports.apuracao = async (req, res) => {
 };
 
 exports.statusUrna = async (req, res) => {
-  const result = await sql.query(`
-    SELECT liberada FROM controle_urna LIMIT 1
-  `);
+  try {
+    const result = await db.query(`
+      SELECT liberada FROM controle_urna LIMIT 1
+    `);
 
-  res.json(result.rows[0]);
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ erro: "Erro ao verificar status" });
+  }
 };
 
 exports.liberarUrna = async (req, res) => {
-  await sql.query(`
-    UPDATE controle_urna SET liberada = true
-  `);
+  try {
+    await db.query(`
+      UPDATE controle_urna SET liberada = true
+    `);
 
-  res.json({ message: "Urna liberada" });
+    res.json({ message: "Urna liberada" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ erro: "Erro ao liberar urna" });
+  }
 };
