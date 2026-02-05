@@ -25,7 +25,7 @@ exports.create = async (req, res) => {
     const foto = req.file ? req.file.filename : null;
 
     await db.query(
-      `INSERT INTO candidatos (nome, funcao, numero, foto)
+      `INSERT INTO candidatos (nome, funcao, num_votacao, foto)
        VALUES ($1, $2, $3, $4)`,
       [nome, funcao, numero, foto]
     );
@@ -46,10 +46,10 @@ exports.create = async (req, res) => {
 exports.list = async (req, res) => {
   try {
     const result = await db.query(
-      `SELECT id, nome, funcao, foto, numero
+      `SELECT id, nome, funcao, foto, num_votacao
        FROM candidatos
        WHERE ativo = true
-       ORDER BY numero`
+       ORDER BY num_votacao`
     );
 
     res.json(result.rows);
@@ -62,10 +62,10 @@ exports.list = async (req, res) => {
 exports.listPublic = async (req, res) => {
   try {
     const result = await db.query(
-      `SELECT id, nome, funcao, foto, numero
+      `SELECT id, nome, funcao, foto, num_votacao
        FROM candidatos
        WHERE ativo = true
-       ORDER BY numero`
+       ORDER BY num_votacao`
     );
 
     res.json(result.rows);
