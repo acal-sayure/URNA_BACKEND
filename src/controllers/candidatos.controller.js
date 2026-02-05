@@ -2,9 +2,9 @@ const db = require('../config/db');
 
 exports.create = async (req, res) => {
   try {
-    const { nome, funcao, numero } = req.body;
+    const { nome, funcao, num_votacao } = req.body;
 
-    if (!nome || !funcao || !numero) {
+    if (!nome || !funcao || !num_votacao) {
       return res.status(400).json({
         erro: "Campos obrigatórios não informados"
       });
@@ -12,8 +12,8 @@ exports.create = async (req, res) => {
 
     // verifica duplicidade
     const exists = await db.query(
-      `SELECT 1 FROM candidatos WHERE numero = $1`,
-      [numero]
+      `SELECT 1 FROM candidatos WHERE num_votacao = $1`,
+      [num_votacao]
     );
 
     if (exists.rows.length > 0) {
@@ -27,7 +27,7 @@ exports.create = async (req, res) => {
     await db.query(
       `INSERT INTO candidatos (nome, funcao, num_votacao, foto)
        VALUES ($1, $2, $3, $4)`,
-      [nome, funcao, numero, foto]
+      [nome, funcao, num_votacao, foto]
     );
 
     res.status(201).json({
